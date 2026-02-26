@@ -4,7 +4,9 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const userController = require("../controllers/user");
+// const userController = require("../controllers/user");
+const { registerUser, loginUser, getAllUsers, getMyProfile, updateMyProfile, deleteMyAccount, getUserById, updateUser, deleteUser } = require("../controllers/user");
+
 const { authenticate, isAdmin } = require("../middleware/auth");
 
 // Ensure uploads directory exists
@@ -35,7 +37,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 // Initialize multer upload with file handling
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
@@ -49,37 +51,37 @@ const uploadNone = multer();
 // ==================== PUBLIC ROUTES ====================
 
 // @route   POST /api/users/register
-router.post("/register", upload.single("profileImage"), userController.registerUser);
+router.post("/register", upload.single("profileImage"), registerUser);
 
 // @route   POST /api/users/login
-router.post("/login", uploadNone.none(), userController.loginUser);
+router.post("/login", uploadNone.none(), loginUser);
 
 // ==================== PROTECTED/ PRIVATE ROUTES ====================
 
 // @route   GET /api/users/profile/me
 
-router.get("/profile/me", authenticate, userController.getMyProfile);
+router.get("/profile/me", authenticate, getMyProfile);
 
 // @route   PUT /api/users/profile/me
 // Supports both form-data (with optional profileImage) and JSON
-router.put("/profile/me", authenticate, upload.single("profileImage"), userController.updateMyProfile);
+router.put("/profile/me", authenticate, upload.single("profileImage"), updateMyProfile);
 
 // @route   DELETE /api/users/profile/me
-router.delete("/profile/me", authenticate, userController.deleteMyAccount);
+router.delete("/profile/me", authenticate, deleteMyAccount);
 
 // ==================== ADMIN ROUTES ====================
 
 // @route   GET /api/users   (get all users)
-router.get("/", authenticate, isAdmin, userController.getAllUsers);
+router.get("/", authenticate, isAdmin, getAllUsers);
 
 // @route   GET /api/users/:id (get user by id)
-router.get("/:id", authenticate, userController.getUserById);
+router.get("/:id", authenticate, getUserById);
 
 // @route   PUT /api/users/:id (Update user by ID)
 // Supports both form-data (with optional profileImage) and JSON
-router.put("/:id", authenticate, upload.single("profileImage"), userController.updateUser);
+router.put("/:id", authenticate, upload.single("profileImage"), updateUser);
 
 // @route   DELETE /api/users/:id (delete user)
-router.delete("/:id", authenticate, isAdmin, userController.deleteUser);
+router.delete("/:id", authenticate, isAdmin, deleteUser);
 
 module.exports = router;
