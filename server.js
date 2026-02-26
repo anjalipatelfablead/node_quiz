@@ -6,6 +6,7 @@ const fs = require("fs");
 
 const db = require("./config/db_connect");
 const userroute = require("./routes/user_route");
+const quizRoutes = require("./routes/quiz_route");
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ db();
 
 // API Routes
 app.use("/api/users", userroute);
+app.use("/api/quizzes", quizRoutes);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
