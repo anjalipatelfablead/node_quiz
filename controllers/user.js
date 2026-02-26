@@ -39,50 +39,68 @@ const validateRole = (role) => {
 exports.registerUser = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
+        const errors = {};
 
         // Validate required fields
-        if (!username || !email || !password) {
+        if (!username) errors.username = "Username is required";
+        if (!email) errors.email = "Email is required";
+        if (!password) errors.password = "Password is required";
+
+        if (Object.keys(errors).length > 0) {
             return res.status(400).json({ 
-                message: "Please provide all required fields: username, email, password" 
+                message: "Validation failed", 
+                errors 
             });
         }
 
         // Validate username
         if (!validateUsername(username)) {
             return res.status(400).json({ 
-                message: "Invalid username. Username must be 3-30 characters long and can only contain letters, numbers, and underscores." 
+                message: "Validation failed",
+                errors: { username: "Username must be 3-30 characters long and can only contain letters, numbers, and underscores." }
             });
         }
 
         // Validate email format
         if (!validateEmail(email)) {
-            return res.status(400).json({ message: "Invalid email format" });
+            return res.status(400).json({ 
+                message: "Validation failed",
+                errors: { email: "Invalid email format" }
+            });
         }
 
         // Validate password strength
         if (!validatePassword(password)) {
             return res.status(400).json({ 
-                message: "Invalid password. Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)." 
+                message: "Validation failed",
+                errors: { password: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)." }
             });
         }
 
         // Validate role if provided
         if (role && !validateRole(role)) {
             return res.status(400).json({ 
-                message: "Invalid role. Allowed roles are: user, admin" 
+                message: "Validation failed",
+                errors: { role: "Invalid role. Allowed roles are: user, admin" }
             });
         }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: "User already exists with this email" });
+            return res.status(400).json({ 
+                message: "Validation failed",
+                errors: { email: "User already exists with this email" }
+            });
         }
 
         // Check if username is already taken
         const existingUsername = await User.findOne({ username });
         if (existingUsername) {
-            return res.status(400).json({ message: "Username is already taken" });
+            return res.status(400).json({ 
+                message: "Validation failed",
+                errors: { username: "Username is already taken" }
+            });
         }
 
         // Hash password
@@ -126,29 +144,43 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const errors = {};
 
         // Validate required fields
-        if (!email || !password) {
+        if (!email) errors.email = "Email is required";
+        if (!password) errors.password = "Password is required";
+
+        if (Object.keys(errors).length > 0) {
             return res.status(400).json({ 
-                message: "Please provide both email and password" 
+                message: "Validation failed", 
+                errors 
             });
         }
 
         // Validate email format
         if (!validateEmail(email)) {
-            return res.status(400).json({ message: "Invalid email format" });
+            return res.status(400).json({ 
+                message: "Validation failed",
+                errors: { email: "Invalid email format" }
+            });
         }
 
         // Check if user exists
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ message: "Invalid email or password" });
+            return res.status(401).json({ 
+                message: "Authentication failed",
+                errors: { email: "Invalid email or password" }
+            });
         }
 
         // Verify password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid email or password" });
+            return res.status(401).json({ 
+                message: "Authentication failed",
+                errors: { password: "Invalid email or password" }
+            });
         }
 
         // Generate token
