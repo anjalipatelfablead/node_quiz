@@ -100,6 +100,23 @@ exports.getUserResults = async (req, res) => {
     }
 };
 
+//  GET ALL RESULTS (Admin only)
+exports.getAllResults = async (req, res) => {
+    try {
+        const results = await Result.find()
+            .populate("quizId", "title")
+            .populate("userId", "username email")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(results);
+    } catch (error) {
+        res.status(500).json({
+            message: "Error fetching all results",
+            error: error.message,
+        });
+    }
+};
+
 
 
 //  GET RESULT BY ID
