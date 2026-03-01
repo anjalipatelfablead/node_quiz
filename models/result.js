@@ -49,6 +49,11 @@ const resultSchema = new mongoose.Schema(
             type: Date,
             default: Date.now,
         },
+
+        timeTaken: {
+            type: Number,
+            default: 0,
+        },
     },
     { timestamps: true }
 );

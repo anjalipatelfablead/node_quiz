@@ -6,7 +6,7 @@ const Quiz = require("../models/quiz");
 //  CREATE RESULT (Submit Quiz)
 exports.submitQuiz = async (req, res) => {
     try {
-        const { quizId, answers } = req.body;
+        const { quizId, answers, timeTaken } = req.body;
         const userId = req.user.userId;
 
         // Validate required fields
@@ -67,6 +67,7 @@ exports.submitQuiz = async (req, res) => {
             answers: evaluatedAnswers,
             score,
             totalMarks,
+            timeTaken: timeTaken || 0,
         });
 
         res.status(201).json({
