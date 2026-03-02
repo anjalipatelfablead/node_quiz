@@ -4,7 +4,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 
-const { createQuestion, getQuestionsByQuiz, getSingleQuestion, updateQuestion, deleteQuestion, } = require("../controllers/question");
+const { createQuestion, getQuestionsByQuiz, getSingleQuestion, updateQuestion, deleteQuestion, updateQuestionsOrder } = require("../controllers/question");
 
 const { authenticate, isAdmin } = require("../middleware/auth");
 const uploadNone = multer();
@@ -24,5 +24,8 @@ router.put("/:id", authenticate, isAdmin, uploadNone.none(), updateQuestion);
 
 // Delete question
 router.delete("/:id", authenticate, isAdmin, deleteQuestion);
+
+// Update questions order
+router.put("/order/update", authenticate, isAdmin, updateQuestionsOrder);
 
 module.exports = router;

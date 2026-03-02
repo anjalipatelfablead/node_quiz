@@ -46,13 +46,12 @@ exports.createQuestion = async (req, res) => {
 };
 
 
-
 //  GET ALL QUESTIONS OF A QUIZ
 exports.getQuestionsByQuiz = async (req, res) => {
     try {
         const questions = await Question.find({
             quizId: req.params.quizId,
-        });
+        }).sort({ order: 1, createdAt: 1 });
 
         res.status(200).json(questions);
     } catch (error) {
@@ -139,6 +138,33 @@ exports.deleteQuestion = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: "Error deleting question",
+            error: error.message,
+        });
+    }
+};
+
+// UPDATE QUESTIONS ORDER
+exports.updateQuestionsOrder = async (req, res) => {
+    try {
+        const { questions } = req.body;
+
+        if (!questions || !Array.isArray(questions)) {
+            return res.status(400).json({ message: "Invalid questions array" });
+        }
+
+        // Update each question's order
+        const updatePromises = questions.map((q) =>
+            Question.findByIdAndUpdate(q._id, { order: q.order })
+        );
+
+        await Promise.all(updatePromises);
+
+        res.status(200).json({
+            message: "Questions order updated successfully",
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Error updating questions order",
             error: error.message,
         });
     }

@@ -38,6 +38,11 @@ const questionSchema = new mongoose.Schema(
       min: 1,
       default:1,
     },
+
+    order: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
