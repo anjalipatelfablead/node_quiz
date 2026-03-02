@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 
 // const userController = require("../controllers/user");
-const { registerUser, loginUser, getAllUsers, getMyProfile, updateMyProfile, deleteMyAccount, getUserById, updateUser, deleteUser } = require("../controllers/user");
+const { registerUser, loginUser, getAllUsers, getMyProfile, updateMyProfile, deleteMyAccount, getUserById, updateUser, deleteUser, toggleUserStatus } = require("../controllers/user");
 
 const { authenticate, isAdmin } = require("../middleware/auth");
 
@@ -83,5 +83,8 @@ router.put("/:id", authenticate, upload.single("profileImage"), updateUser);
 
 // @route   DELETE /api/users/:id (delete user)
 router.delete("/:id", authenticate, isAdmin, deleteUser);
+
+// @route   PATCH /api/users/:id/toggle-status (toggle user active status)
+router.patch("/:id/toggle-status", authenticate, isAdmin, toggleUserStatus);
 
 module.exports = router;

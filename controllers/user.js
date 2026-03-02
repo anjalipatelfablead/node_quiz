@@ -174,6 +174,14 @@ exports.loginUser = async (req, res) => {
             });
         }
 
+        // Check if user is active
+        if (user.isActive === false) {
+            return res.status(403).json({ 
+                message: "Account deactivated",
+                errors: { email: "Your account has been deactivated. Please contact admin." }
+            });
+        }
+
         // Verify password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
@@ -426,5 +434,37 @@ exports.deleteMyAccount = async (req, res) => {
         res.status(200).json({ message: "Account deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: "Error deleting account", error: error.message });
+    }
+};
+
+// @desc    Toggle user active status (Admin only)
+// @route   PATCH /api/users/:id/toggle-status
+exports.toggleUserStatus = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Prevent admin from deactivating themselves
+        if (user._id.toString() === req.user.userId) {
+            return res.status(403).json({ message: "You cannot change your own status" });
+        }
+
+        user.isActive = !user.isActive;
+        await user.save();
+
+        res.status(200).json({
+            message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                isActive: user.isActive
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error toggling user status", error: error.message });
     }
 };
