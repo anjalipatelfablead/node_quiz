@@ -26,6 +26,10 @@ const quizSchema = new mongoose.Schema(
             enum: ["draft", "published", "archived"],
             default: "draft",
         },
+        isActive: {
+            type: Boolean,
+            default: true,
+        },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

@@ -22,6 +22,7 @@ exports.createQuiz = async (req, res) => {
             category,
             timeLimit: Number(timeLimit),
             status,
+            isActive: status === 'published',
             createdBy: req.user.userId,
         });
 
@@ -106,7 +107,7 @@ exports.updateQuiz = async (req, res) => {
             return res.status(404).json({ message: "Quiz not found" });
         }
 
-        const { title, description, category, timeLimit, status } = req.body;
+        const { title, description, category, timeLimit, status, isActive } = req.body;
 
         const updateData = {};
 
@@ -144,6 +145,15 @@ exports.updateQuiz = async (req, res) => {
                 });
             }
             updateData.status = status;
+            // When publishing, set isActive to true by default
+            if (status === 'published' && quiz.status !== 'published') {
+                updateData.isActive = true;
+            }
+        }
+
+        // Update isActive status
+        if (isActive !== undefined) {
+            updateData.isActive = isActive;
         }
 
         const updatedQuiz = await Quiz.findByIdAndUpdate(
