@@ -359,8 +359,14 @@ exports.updateUser = async (req, res) => {
 // @desc    Update current user profile
 exports.updateMyProfile = async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, oldPassword } = req.body;
         const userId = req.user.userId;
+
+        // Get current user with password
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
         // Validate username if provided
         if (username) {
@@ -393,6 +399,23 @@ exports.updateMyProfile = async (req, res) => {
             if (!validatePassword(password)) {
                 return res.status(400).json({
                     message: "Invalid password. Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)."
+                });
+            }
+
+            // Verify old password is provided
+            if (!oldPassword) {
+                return res.status(400).json({
+                    message: "Validation failed",
+                    errors: { oldPassword: "Old password is required to set a new password" }
+                });
+            }
+
+            // Verify old password matches
+            const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+            if (!isOldPasswordValid) {
+                return res.status(400).json({
+                    message: "Validation failed",
+                    errors: { oldPassword: "Old password is incorrect" }
                 });
             }
         }
