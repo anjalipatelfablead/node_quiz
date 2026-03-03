@@ -496,3 +496,157 @@ exports.toggleUserStatus = async (req, res) => {
         res.status(500).json({ message: "Error toggling user status", error: error.message });
     }
 };
+
+// Generate random reset token
+const generateResetToken = () => {
+    const crypto = require('crypto');
+    return crypto.randomBytes(32).toString('hex');
+};
+
+// @desc    Forgot password - Generate reset token
+// @route   POST /api/users/forgot-password
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Validate email
+        if (!email) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors: { email: "Email is required" }
+            });
+        }
+
+        if (!validateEmail(email)) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors: { email: "Invalid email format" }
+            });
+        }
+
+        // Find user by email
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                errors: { email: "No account found with this email address" }
+            });
+        }
+
+        // Check if user is active
+        // if (user.isActive === false) {
+        //     return res.status(403).json({
+        //         message: "Account deactivated",
+        //         errors: { email: "Your account has been deactivated. Please contact admin." }
+        //     });
+        // }
+
+        // Generate reset token
+        const resetToken = generateResetToken();
+        const resetTokenExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+        // Save reset token to user
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = resetTokenExpiry;
+        await user.save();
+
+        // Send reset email
+        await sendEmail({
+            to: user.email,
+            subject: "Password Reset Request - Fablead Quiz",
+            html: `
+                <h2>Password Reset Request</h2>
+                <p>Hello ${user.username},</p>
+                <p>We received a request to reset your password. Click the button below to reset it:</p>
+                <p style="margin: 20px 0;">
+                    <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}" style="padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+                </p>
+                <p>This link will expire in 30 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                <br/>
+                <p>Thank you,</p>
+                <p>Fablead Quiz Team</p>
+            `,
+        });
+
+        res.status(200).json({
+            message: "Password reset instructions sent to your email"
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error processing forgot password request", error: error.message });
+    }
+};
+
+// @desc    Reset password with token
+// @route   POST /api/users/reset-password
+exports.resetPassword = async (req, res) => {
+    try {
+        const { resetToken, newPassword } = req.body;
+        const errors = {};
+
+        // Validate required fields
+        if (!resetToken) errors.resetToken = "Reset token is required";
+        if (!newPassword) errors.newPassword = "New password is required";
+
+        if (Object.keys(errors).length > 0) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors
+            });
+        }
+
+        // Validate password strength
+        if (!validatePassword(newPassword)) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors: { newPassword: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)." }
+            });
+        }
+
+        // Find user with valid reset token
+        const user = await User.findOne({
+            resetPasswordToken: resetToken,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid or expired token",
+                errors: { resetToken: "The reset token is invalid or has expired. Please request a new one." }
+            });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update user password and clear reset token
+        user.password = hashedPassword;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+
+        // Send confirmation email
+        await sendEmail({
+            to: user.email,
+            subject: "Password Reset Successful - Fablead Quiz",
+            html: `
+                <h2>Password Reset Successful</h2>
+                <p>Hello ${user.username},</p>
+                <p>Your password has been successfully reset.</p>
+                <p>You can now log in with your new password.</p>
+                <br/>
+                <p>If you didn't make this change, please contact support immediately.</p>
+                <br/>
+                <p>Thank you,</p>
+                <p>Fablead Quiz Team</p>
+            `,
+        });
+
+        res.status(200).json({
+            message: "Password reset successful. Please login with your new password."
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error resetting password", error: error.message });
+    }
+};

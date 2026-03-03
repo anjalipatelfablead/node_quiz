@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 
 // const userController = require("../controllers/user");
-const { registerUser, loginUser, getAllUsers, getMyProfile, updateMyProfile, deleteMyAccount, getUserById, updateUser, deleteUser, toggleUserStatus } = require("../controllers/user");
+const { registerUser, loginUser, getAllUsers, getMyProfile, updateMyProfile, deleteMyAccount, getUserById, updateUser, deleteUser, toggleUserStatus, forgotPassword, resetPassword } = require("../controllers/user");
 
 const { authenticate, isAdmin } = require("../middleware/auth");
 
@@ -55,6 +55,12 @@ router.post("/register", upload.single("profileImage"), registerUser);
 
 // @route   POST /api/users/login
 router.post("/login", uploadNone.none(), loginUser);
+
+// @route   POST /api/users/forgot-password
+router.post("/forgot-password", uploadNone.none(), forgotPassword);
+
+// @route   POST /api/users/reset-password
+router.post("/reset-password", uploadNone.none(), resetPassword);
 
 // ==================== PROTECTED/ PRIVATE ROUTES ====================
 
