@@ -468,6 +468,20 @@ exports.toggleUserStatus = async (req, res) => {
         user.isActive = !user.isActive;
         await user.save();
 
+        // Send email notification
+        const emailSubject = `Your account has been ${user.isActive ? 'activated' : 'deactivated'}`;
+        const emailHtml = `
+            <p>Hello ${user.username},</p>
+            <p>Your account has been temporarily ${user.isActive ? 'activated' : 'deactivated'} by an administrator.</p>
+            <p>If you have any questions, please contact support.</p>
+        `;
+
+        await sendEmail({
+            to: user.email,
+            subject: emailSubject,
+            html: emailHtml,
+        });
+
         res.status(200).json({
             message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
             user: {
