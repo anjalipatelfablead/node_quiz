@@ -495,7 +495,7 @@ exports.toggleUserStatus = async (req, res) => {
         const emailSubject = `Your account has been ${user.isActive ? 'activated' : 'deactivated'}`;
         const emailHtml = `
             <p>Hello ${user.username},</p>
-            <p>Your account has been temporarily ${user.isActive ? 'activated' : 'deactivated'} by an administrator.</p>
+            <p>Your account has been  ${user.isActive ? 'activated' : 'temporarily deactivated'} by an administrator.</p>
             <p>If you have any questions, please contact support.</p>
         `;
 
