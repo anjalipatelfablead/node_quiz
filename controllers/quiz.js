@@ -1,4 +1,39 @@
 const Quiz = require("../models/quiz");
+const User = require("../models/user");
+const sendEmail = require("../utils/sendEmail");
+
+// Helper function to notify all users about a new quiz
+const notifyUsersAboutNewQuiz = async (quiz) => {
+    try {
+        const users = await User.find({ role: 'user', isActive: true }).select('email');
+        const userEmails = users.map(user => user.email).join(', ');
+
+        if (userEmails) {
+            await sendEmail({
+                to: userEmails,
+                subject: "New Quiz Available: " + quiz.title,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                        <h2 style="color: #f97316;">New Quiz Alert!</h2>
+                        <p>Hi there,</p>
+                        <p>A new quiz <strong>"${quiz.title}"</strong> has been published in the <strong>${quiz.category}</strong> category.</p>
+                        <p><strong>Description:</strong> ${quiz.description}</p>
+                        <p><strong>Time Limit:</strong> ${quiz.timeLimit} minutes</p>
+                        <div style="margin-top: 30px; text-align: center;">
+                            <a href="http://localhost:5173/quizzes" style="background-color: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Take Quiz Now</a>
+                        </div>
+                        <br/>
+                        <p>Happy Learning!</p>
+                        <p>Team Fablead Quiz</p>
+                    </div>
+                `,
+            });
+            console.log("Email notification sent to all users for quiz:", quiz.title);
+        }
+    } catch (error) {
+        console.error("Failed to send email notifications:", error.message);
+    }
+};
 
 // ================= CREATE QUIZ (Admin Only) =================
 exports.createQuiz = async (req, res) => {
@@ -27,6 +62,11 @@ exports.createQuiz = async (req, res) => {
         });
 
         await newQuiz.save();
+
+        // If quiz is published at creation, notify users
+        if (status === 'published') {
+            notifyUsersAboutNewQuiz(newQuiz);
+        }
 
         res.status(201).json({
             message: "Quiz created successfully",
@@ -148,6 +188,7 @@ exports.updateQuiz = async (req, res) => {
             // When publishing, set isActive to true by default
             if (status === 'published' && quiz.status !== 'published') {
                 updateData.isActive = true;
+                notifyUsersAboutNewQuiz(quiz); // Notify users when status changes to published
             }
         }
 
