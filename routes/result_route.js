@@ -7,6 +7,7 @@ const {
     getSingleResult,
     deleteResult,
     getAllResults,
+    generateCertificate,
 } = require("../controllers/result");
 
 const { authenticate, isAdmin } = require("../middleware/auth");
@@ -22,6 +23,9 @@ router.get("/all", authenticate, isAdmin, getAllResults);
 
 // Get single result
 router.get("/:id", authenticate, getSingleResult);
+
+// Generate certificate
+router.get("/:id/certificate", authenticate, generateCertificate);
 
 // Delete result (admin)
 router.delete("/:id", authenticate, isAdmin, deleteResult);

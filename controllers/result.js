@@ -1,6 +1,8 @@
 const Result = require("../models/result");
 const Question = require("../models/question");
 const Quiz = require("../models/quiz");
+const puppeteer = require("puppeteer");
+const User = require("../models/user");
 
 
 //  CREATE RESULT (Submit Quiz)
@@ -157,6 +159,131 @@ exports.deleteResult = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: "Error deleting result",
+            error: error.message,
+        });
+    }
+};
+
+// GENERATE CERTIFICATE
+exports.generateCertificate = async (req, res) => {
+    try {
+        const result = await Result.findById(req.params.id)
+            .populate("quizId", "title")
+            .populate("userId", "username email");
+
+        if (!result) {
+            return res.status(404).json({ message: "Result not found" });
+        }
+
+        const percentage = Math.round((result.score / result.totalMarks) * 100);
+
+        if (percentage < 60) {
+            return res.status(403).json({ message: "Certificate only available for scores 60% and above" });
+        }
+
+        const browser = await puppeteer.launch({
+            headless: "new",
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        });
+        const page = await browser.newPage();
+
+        const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: 'Arial', sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                    background-color: #f0f0f0;
+                }
+                .certificate {
+                    width: 800px;
+                    padding: 50px;
+                    text-align: center;
+                    border: 15px solid #ffa500;
+                    background-color: white;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+                    position: relative;
+                }
+                .header {
+                    font-size: 50px;
+                    color: #333;
+                    margin-bottom: 20px;
+                    text-transform: uppercase;
+                }
+                .sub-header {
+                    font-size: 24px;
+                    color: #666;
+                    margin-bottom: 40px;
+                }
+                .name {
+                    font-size: 40px;
+                    font-weight: bold;
+                    color: #ffa500;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #eee;
+                    display: inline-block;
+                    padding-bottom: 10px;
+                }
+                .quiz-title {
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #444;
+                    margin: 20px 0;
+                }
+                .score {
+                    font-size: 22px;
+                    color: #555;
+                    margin-top: 30px;
+                }
+                .date {
+                    margin-top: 40px;
+                    font-size: 18px;
+                    color: #888;
+                }
+                .footer {
+                    margin-top: 50px;
+                    font-size: 14px;
+                    color: #aaa;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="certificate">
+                <div class="header">Certificate of Achievement</div>
+                <div class="sub-header">This is to certify that</div>
+                <div class="name">${result.userId.username}</div>
+                <div class="sub-header">has successfully completed the quiz</div>
+                <div class="quiz-title">${result.quizId.title}</div>
+                <div class="score">With a score of <strong>${percentage}%</strong></div>
+                <div class="date">Date: ${new Date(result.createdAt).toLocaleDateString()}</div>
+                <div class="footer">Fablead Quiz Platform</div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        await page.setContent(content);
+        const pdf = await page.pdf({
+            format: 'A4',
+            landscape: true,
+            printBackground: true
+        });
+
+        await browser.close();
+
+        res.contentType("application/pdf");
+        res.send(pdf);
+
+    } catch (error) {
+        console.error("Certificate generation error:", error);
+        res.status(500).json({
+            message: "Error generating certificate",
             error: error.message,
         });
     }
