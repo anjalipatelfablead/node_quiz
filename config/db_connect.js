@@ -1,29 +1,36 @@
 const mongoose = require("mongoose");
+
 const url = process.env.MONGODB_URI;
 
-console.log("MongoDB URI: ", url);
+let isConnecting = false;
 
 const dbconnect = async () => {
+    if (isConnecting) return;   // prevent multiple loops
+    isConnecting = true;
+
     try {
         await mongoose.connect(url, {
-            serverSelectionTimeoutMS: 30000,
-            socketTimeoutMS: 45000,
-            connectTimeoutMS: 30000,
-            maxPoolSize: 10,
+            serverSelectionTimeoutMS: 10000,
         });
-        console.log("Database connected successfully");
+
+        console.log("✅ Database connected successfully");
+        isConnecting = false;
+
     } catch (err) {
-        console.error("Database connection error: ", err.message);
+        console.error("❌ Database connection error:", err.message);
+
+        isConnecting = false;
+
         setTimeout(() => {
-            console.log("Retrying connection...");
+            console.log("🔁 Retrying DB connection...");
             dbconnect();
         }, 5000);
     }
 };
 
+// reconnect only when connection lost AFTER success
 mongoose.connection.on("disconnected", () => {
-    console.warn("MongoDB disconnected, attempting to reconnect...");
-    dbconnect();
+    console.log("⚠️ MongoDB disconnected");
 });
 
 module.exports = dbconnect;
